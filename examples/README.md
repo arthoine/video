@@ -21,6 +21,31 @@ python main.py -i valorant_stream.mp4 -c examples/config_fps_intense.yaml
 
 ---
 
+### 🤖 config_arc_raiders.yaml
+**Optimisé pour**: Arc Raiders (Extraction shooter PvPvE)
+
+**Caractéristiques**:
+- Segments moyens (5s) pour action variée
+- Équilibre audio/visuel (50%/35%) + transcription (15%)
+- Capture combats, extractions, clutch et moments de tension
+- Segments jusqu'à 35s pour extractions complètes
+- Boost sur les réactions vocales (extractions réussies, surprise)
+- Export 1080p 60fps
+
+**Moments capturés**:
+- Combats PvP et contre robots/boss
+- Extractions réussies (avec tension)
+- Clutch situations et teamfights
+- Embuscades et moments de surprise
+- Loots épiques
+
+**Utilisation**:
+```bash
+python main.py -i arc_raiders_stream.mp4 -c examples/config_arc_raiders.yaml --gpu
+```
+
+---
+
 ### 💬 config_talk_show.yaml
 **Optimisé pour**: Streams discussion/talk/podcast
 
@@ -137,6 +162,7 @@ output:
 |--------|---------|---------|-----------|-------------|
 | **fast_preview** | ⚡⚡⚡⚡⚡ | ⭐⭐ | ⭐⭐⭐ | Tests rapides |
 | **fps_intense** | ⚡⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | FPS compétitifs |
+| **arc_raiders** | ⚡⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Extraction shooter PvPvE |
 | **talk_show** | ⚡⚡ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Discussions |
 | **max_quality** | ⚡ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Upload YouTube premium |
 
@@ -173,6 +199,9 @@ Si vous obtenez **pas assez de segments**:
 
 ### Valorant / CS:GO / Rainbow Six
 → `config_fps_intense.yaml`
+
+### Arc Raiders / Tarkov / The Cycle (Extraction Shooters)
+→ `config_arc_raiders.yaml`
 
 ### Apex Legends / Fortnite (BR)
 → `config_fps_intense.yaml` avec `max_segment_duration: 40`
