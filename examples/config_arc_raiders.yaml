@@ -1,0 +1,108 @@
+# Configuration optimisée pour Arc Raiders
+# Extraction shooter PvPvE - Capture les combats, extractions et moments épiques
+
+# Arc Raiders combine FPS intense + survie/extraction
+# Focus sur: combats PvP/PvE, extractions, moments de tension, clutch
+analysis:
+  segment_duration_seconds: 5  # Segments moyens pour action variée
+  audio_intensity_threshold: 0.65  # Sensible aux gunfights et réactions
+  scene_change_threshold: 28.0  # Détecte combat + exploration rapide
+  enable_whisper: true  # Important pour les réactions de tension
+  whisper_model: base
+
+  # Équilibre entre action et réactions vocales
+  score_weights:
+    audio: 0.50      # Gunfights, explosions, tirs d'armes
+    visual: 0.35     # Mouvements rapides, combats
+    transcription: 0.15  # Réactions: "oh non", "let's go", "clutch"
+
+editing:
+  min_gap_between_segments: 30  # Espace entre moments
+  context_before_seconds: 2.5  # Contexte pour comprendre l'encounter
+  context_after_seconds: 3.5   # Voir le résultat de l'action
+  min_segment_duration: 5
+  max_segment_duration: 35  # Segments plus longs pour extractions complètes
+  use_transitions: true
+  transition_duration: 0.4
+  transition_type: crossfade
+
+output:
+  target_duration_minutes: 18  # Légèrement plus long pour capturer les séquences complètes
+  quality: 1080p
+  fps: 60  # 60fps essentiel pour FPS
+  preset: medium
+  crf: 18  # Bonne qualité pour voir les détails du jeu
+
+  # Recommandé: Ajoutez vos intro/outro si vous en avez
+  # intro_path: "intro_arc_raiders.mp4"
+  # outro_path: "outro.mp4"
+
+performance:
+  use_gpu: true  # Fortement recommandé
+  use_cache: true
+  num_threads: 0
+
+advanced:
+  min_score_threshold: 0.35  # Sélectif mais pas trop
+  remove_silent_segments: true
+  silence_threshold_db: -38
+
+  # Boost léger pour les moments avec réactions vocales
+  # (extractions réussies, clutch, surprise)
+  transcription_boost_factor: 1.3
+
+  prefer_longer_segments: false
+
+# ============================================================================
+# CONSEILS SPÉCIFIQUES POUR ARC RAIDERS
+# ============================================================================
+
+# Moments clés capturés:
+# ✓ Combats PvP intenses
+# ✓ Combats contre robots/boss
+# ✓ Extractions réussies (avec tension)
+# ✓ Clutch situations
+# ✓ Loots épiques
+# ✓ Moments de surprise/embuscade
+# ✓ Teamfights coordonnées
+
+# Ajustements possibles selon votre style:
+
+# Si vous voulez capturer PLUS de moments calmes/exploration:
+# audio_intensity_threshold: 0.55
+# transcription: 0.20 (plus de poids sur les réactions)
+
+# Si vous voulez SEULEMENT l'action pure:
+# audio_intensity_threshold: 0.75
+# max_segment_duration: 25
+# min_gap_between_segments: 40
+
+# Pour capturer les extractions complètes (moments longs):
+# max_segment_duration: 45
+# prefer_longer_segments: true
+
+# ============================================================================
+# UTILISATION
+# ============================================================================
+
+# Commande de base:
+# python main.py -i arc_raiders_stream.mp4 -c examples/config_arc_raiders.yaml
+
+# Avec GPU (recommandé):
+# python main.py -i arc_raiders_stream.mp4 -c examples/config_arc_raiders.yaml --gpu
+
+# Durée personnalisée (ex: 25 minutes):
+# python main.py -i arc_raiders_stream.mp4 -c examples/config_arc_raiders.yaml -d 25
+
+# Avec intro/outro:
+# python main.py -i arc_raiders_stream.mp4 -c examples/config_arc_raiders.yaml \
+#   --intro intro.mp4 --outro outro.mp4
+
+# ============================================================================
+
+# Notes:
+# - Testez d'abord avec --no-whisper pour voir si la détection audio/visuelle
+#   capture bien vos moments forts
+# - Ajustez audio_intensity_threshold si besoin (0.6-0.7 recommandé)
+# - Les extractions réussies génèrent souvent des pics audio (musique + réactions)
+# - Les embuscades créent des changements visuels + audio soudains

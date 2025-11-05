@@ -1,0 +1,47 @@
+# Configuration rapide pour preview/test
+# Utilisez cette config pour tester rapidement l'algorithme
+# Traitement 3-4x plus rapide que la config par défaut
+
+analysis:
+  segment_duration_seconds: 10  # Segments longs = moins d'analyse
+  audio_intensity_threshold: 0.75  # Plus sélectif
+  scene_change_threshold: 35.0
+  enable_whisper: false  # DÉSACTIVÉ pour vitesse
+  whisper_model: base
+
+  score_weights:
+    audio: 0.6       # Seulement audio + visuel
+    visual: 0.4
+    transcription: 0.0
+
+editing:
+  min_gap_between_segments: 40
+  context_before_seconds: 1  # Contexte minimal
+  context_after_seconds: 2
+  min_segment_duration: 8
+  max_segment_duration: 20
+  use_transitions: false  # Pas de transitions = plus rapide
+  transition_duration: 0
+
+output:
+  target_duration_minutes: 10  # Plus court
+  quality: 720p  # Qualité réduite
+  fps: 30  # 30fps suffisant pour preview
+  preset: veryfast  # Preset le plus rapide
+  crf: 23  # Qualité standard
+
+performance:
+  use_gpu: false  # Même sans GPU c'est rapide
+  use_cache: true
+  audio_chunk_size: 120  # Chunks plus gros
+
+advanced:
+  min_score_threshold: 0.5  # Très sélectif
+  remove_silent_segments: true
+  prefer_longer_segments: false
+
+# Notes:
+# - Temps de traitement estimé: 5-10 minutes pour une vidéo de 4h
+# - Idéal pour tester différents seuils avant traitement final
+# - Qualité suffisante pour vérifier que les bons moments sont détectés
+# - Une fois satisfait, utiliser config.yaml ou config_max_quality.yaml
