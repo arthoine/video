@@ -349,6 +349,29 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 2. Activer GPU si vous avez une carte NVIDIA
 3. Fermer les applications en arrière-plan
 
+### Problème: "ModuleNotFoundError: No module named 'moviepy.editor'"
+
+**Erreur**:
+```
+ModuleNotFoundError: No module named 'moviepy.editor'
+```
+
+**Solution**:
+```powershell
+# Réinstaller moviepy et ses dépendances
+pip install --upgrade decorator proglog pillow
+pip install --upgrade moviepy
+
+# Si le problème persiste:
+pip uninstall moviepy
+pip install moviepy==1.0.3
+```
+
+**Vérification**:
+```powershell
+python -c "from moviepy.editor import VideoFileClip; print('OK')"
+```
+
 ### Problème: Chemins avec espaces
 
 **Mauvais**:
