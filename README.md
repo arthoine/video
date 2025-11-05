@@ -7,6 +7,9 @@ Transformez automatiquement vos VODs de 4 heures en vidéos YouTube de 10-25 min
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20MacOS-lightgrey.svg)
+
+> **🪟 Utilisateurs Windows**: Consultez le guide complet [WINDOWS.md](WINDOWS.md) pour l'installation pas-à-pas et les scripts automatiques!
 
 ---
 
@@ -76,13 +79,33 @@ Transformez automatiquement vos VODs de 4 heures en vidéos YouTube de 10-25 min
 
 ## 📦 Installation
 
-### Prérequis
+### 🪟 Installation Windows
+
+**Si vous êtes sur Windows 10/11**, suivez le guide détaillé: **[WINDOWS.md](WINDOWS.md)**
+
+Le guide inclut:
+- Installation complète pas-à-pas
+- Scripts automatiques (.bat) pour faciliter l'utilisation
+- Résolution de tous les problèmes courants Windows
+- Test rapide en un clic
+
+**Installation express Windows**:
+1. Télécharger le projet (ZIP ou Git)
+2. Double-cliquer sur `install_windows.bat`
+3. Double-cliquer sur `test_rapide.bat` pour vérifier
+4. Double-cliquer sur `run_arc_raiders.bat` pour votre premier traitement!
+
+---
+
+### 🐧🍎 Installation Linux / MacOS
+
+#### Prérequis
 
 - **Python**: 3.8 ou supérieur
 - **FFmpeg**: Obligatoire (installation système)
 - **GPU** (optionnel): NVIDIA avec CUDA pour accélération
 
-### Installation rapide
+#### Installation rapide
 
 #### 1. Cloner le repository
 
