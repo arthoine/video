@@ -196,10 +196,31 @@ class VideoAnalyzer:
         Principe: Les moments forts (kills, réactions) génèrent des pics d'intensité audio.
         """
         self.logger.info("Extraction de l'audio...")
-        audio_array = video.audio.to_soundarray(fps=22050)
+
+        # Vérifier que la vidéo a de l'audio
+        if video.audio is None:
+            self.logger.warning("La vidéo n'a pas de piste audio, scores audio = 0")
+            num_segments = int(video.duration / self.segment_duration) + 1
+            return np.zeros(num_segments)
+
+        try:
+            # Extraire l'audio avec gestion d'erreur
+            audio_array = video.audio.to_soundarray(fps=22050)
+
+            # Vérifier que l'extraction a fonctionné
+            if audio_array is None or len(audio_array) == 0:
+                self.logger.warning("Impossible d'extraire l'audio, scores audio = 0")
+                num_segments = int(video.duration / self.segment_duration) + 1
+                return np.zeros(num_segments)
+
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'extraction audio: {e}")
+            self.logger.warning("Analyse audio désactivée, scores audio = 0")
+            num_segments = int(video.duration / self.segment_duration) + 1
+            return np.zeros(num_segments)
 
         # Conversion mono si stéréo
-        if len(audio_array.shape) > 1:
+        if len(audio_array.shape) > 1 and audio_array.shape[1] > 1:
             audio_array = np.mean(audio_array, axis=1)
 
         # Calcul de l'énergie RMS par segment
