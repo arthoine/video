@@ -21,6 +21,8 @@ import cv2
 from pathlib import Path
 import pickle
 import hashlib
+import tempfile
+import os
 from tqdm import tqdm
 from typing import List, Dict, Tuple
 
@@ -313,12 +315,22 @@ class VideoAnalyzer:
         if not self.whisper_model:
             return None
 
-        # Extraction de l'audio temporaire
-        temp_audio = '/tmp/temp_audio.wav'
-        video.audio.write_audiofile(temp_audio, fps=16000, verbose=False, logger=None)
+        # Vérifier que la vidéo a de l'audio
+        if video.audio is None:
+            self.logger.warning("Pas d'audio disponible pour transcription")
+            return None
+
+        # Créer un fichier temporaire compatible multi-plateforme (Windows/Linux/Mac)
+        temp_fd, temp_audio = tempfile.mkstemp(suffix='.wav', prefix='streamhighlight_')
+        os.close(temp_fd)  # Fermer le file descriptor, on utilise juste le chemin
 
         try:
-            # Transcription
+            # Extraction de l'audio temporaire
+            self.logger.info(f"Export audio temporaire vers {temp_audio}...")
+            video.audio.write_audiofile(temp_audio, fps=16000, verbose=False, logger=None)
+
+            # Transcription avec Whisper
+            self.logger.info("Transcription avec Whisper en cours...")
             result = self.whisper_model.transcribe(temp_audio, language='fr')
 
             # Mots-clés d'excitation (français + anglais)
@@ -346,11 +358,21 @@ class VideoAnalyzer:
             if segment_scores.max() > 0:
                 segment_scores = segment_scores / segment_scores.max()
 
+            self.logger.info(f"✓ Transcription terminée: {len(result['segments'])} segments transcrits")
             return segment_scores
 
         except Exception as e:
             self.logger.error(f"Erreur lors de la transcription: {e}")
             return None
+
+        finally:
+            # Nettoyage: supprimer le fichier temporaire
+            try:
+                if os.path.exists(temp_audio):
+                    os.remove(temp_audio)
+                    self.logger.debug(f"Fichier temporaire supprimé: {temp_audio}")
+            except Exception as e:
+                self.logger.warning(f"Impossible de supprimer le fichier temporaire: {e}")
 
     def _combine_scores(self, segments: List[VideoSegment], audio_scores: np.ndarray,
                        visual_scores: np.ndarray, transcription_scores: np.ndarray = None) -> List[VideoSegment]:
