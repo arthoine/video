@@ -30,8 +30,8 @@ output:
   target_duration_minutes: 18  # Légèrement plus long pour capturer les séquences complètes
   quality: 1080p
   fps: 60  # 60fps essentiel pour FPS
-  preset: medium
-  crf: 18  # Bonne qualité pour voir les détails du jeu
+  preset: fast  # Balance vitesse/qualité (medium=trop lent, fast=5-10min export)
+  crf: 20  # Excellente qualité, encode plus vite que 18
 
   # Recommandé: Ajoutez vos intro/outro si vous en avez
   # intro_path: "intro_arc_raiders.mp4"

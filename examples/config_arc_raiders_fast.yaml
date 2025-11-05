@@ -1,0 +1,52 @@
+# Configuration Arc Raiders - VERSION RAPIDE
+# Export 3-4x plus rapide avec qualité légèrement réduite
+
+analysis:
+  segment_duration_seconds: 5
+  audio_intensity_threshold: 0.65
+  scene_change_threshold: 28.0
+  enable_whisper: true
+  whisper_model: base
+
+  score_weights:
+    audio: 0.50
+    visual: 0.35
+    transcription: 0.15
+
+editing:
+  min_gap_between_segments: 30
+  context_before_seconds: 2.5
+  context_after_seconds: 3.5
+  min_segment_duration: 5
+  max_segment_duration: 35
+  use_transitions: true
+  transition_duration: 0.4
+  transition_type: crossfade
+
+output:
+  target_duration_minutes: 18
+  quality: 1080p
+  fps: 60
+  preset: fast  # ✅ RAPIDE au lieu de medium
+  crf: 23  # ✅ Qualité standard au lieu de 18 (toujours bon pour YouTube)
+
+  # Si vous avez GPU NVIDIA, le codec sera h264_nvenc automatiquement
+
+performance:
+  use_gpu: true
+  use_cache: true
+  num_threads: 0
+
+advanced:
+  min_score_threshold: 0.35
+  remove_silent_segments: true
+  silence_threshold_db: -38
+  transcription_boost_factor: 1.3
+  prefer_longer_segments: false
+
+# ============================================================================
+# DIFFÉRENCES AVEC CONFIG NORMALE
+# ============================================================================
+# preset: fast (au lieu de medium) → Export 2-3x plus rapide
+# crf: 23 (au lieu de 18) → Qualité toujours excellente, fichier plus petit
+# Temps export estimé: 5-10 minutes au lieu de 1h30
