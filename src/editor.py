@@ -49,6 +49,13 @@ class VideoEditor:
         self.intro_path = config.get('output', {}).get('intro_path')
         self.outro_path = config.get('output', {}).get('outro_path')
 
+        # GPU status
+        self.use_gpu = config.get('performance', {}).get('use_gpu', False)
+        if self.use_gpu:
+            self.logger.info("🎮 Mode GPU activé pour l'encodage")
+        else:
+            self.logger.info("⚠️  Mode CPU (GPU désactivé) - L'encodage sera plus lent")
+
     def create_highlight_video(self, segments: List[VideoSegment]):
         """
         Crée la vidéo finale de highlights.
@@ -221,7 +228,20 @@ class VideoEditor:
             # NVENC utilise des presets différents: fast, medium, slow, hq, bd, ll, llhq
             if preset not in ['fast', 'medium', 'slow', 'hq', 'bd', 'll', 'llhq', 'lossless']:
                 preset = 'hq'  # High quality par défaut pour GPU
-            self.logger.info("🎮 Utilisation de l'accélération GPU NVIDIA (h264_nvenc)")
+
+            # Vérifier le GPU
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    gpu_name = torch.cuda.get_device_name(0)
+                    self.logger.info(f"🎮 Utilisation de l'accélération GPU NVIDIA: {gpu_name}")
+                    self.logger.info(f"   Codec: h264_nvenc | Preset: {preset} | CQ: {crf}")
+                else:
+                    self.logger.warning("⚠️  GPU demandé mais CUDA non disponible, fallback sur CPU")
+                    codec = self.codec  # Revenir au codec CPU
+            except ImportError:
+                self.logger.warning("⚠️  PyTorch non disponible, impossible de vérifier le GPU")
+                # On garde h264_nvenc et on laisse FFmpeg gérer
 
         # Paramètres FFmpeg optimisés
         # Note: Ne pas mettre -c:v ici car déjà dans le paramètre codec= de write_videofile

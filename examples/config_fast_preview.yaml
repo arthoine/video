@@ -31,7 +31,7 @@ output:
   crf: 23  # Qualité standard
 
 performance:
-  use_gpu: false  # Même sans GPU c'est rapide
+  use_gpu: true   # GPU rend le preview ENCORE plus rapide (1-2 min au lieu de 5-10 min)
   use_cache: true
   audio_chunk_size: 120  # Chunks plus gros
 

@@ -35,9 +35,9 @@ output:
   crf: 23            # Qualité standard (au lieu de 18)
 
 performance:
-  use_gpu: false
+  use_gpu: true      # GPU recommandé même pour fast encode
   use_cache: true
-  num_threads: 4     # Utilise 4 threads CPU pour l'encodage
+  num_threads: 4     # Threads CPU (fallback si GPU non disponible)
   audio_chunk_size: 60
 
 advanced:

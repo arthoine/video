@@ -74,6 +74,12 @@ class VideoAnalyzer:
         self.use_cache = config.get('performance', {}).get('use_cache', True)
         self.use_gpu = config.get('performance', {}).get('use_gpu', False)
 
+        # Log GPU status
+        if self.use_gpu:
+            self.logger.info("🎮 Mode GPU activé pour l'analyse")
+        else:
+            self.logger.info("⚠️  Mode CPU (GPU désactivé) - Le traitement sera plus lent")
+
         # Chargement du modèle Whisper si activé
         self.whisper_model = None
         if self.use_whisper and WHISPER_AVAILABLE:
@@ -84,7 +90,24 @@ class VideoAnalyzer:
         try:
             model_size = self.config.get('analysis', {}).get('whisper_model', 'base')
             device = 'cuda' if self.use_gpu else 'cpu'
-            self.logger.info(f"Chargement du modèle Whisper '{model_size}' sur {device}...")
+
+            if device == 'cuda':
+                # Vérifier que CUDA est vraiment disponible
+                try:
+                    import torch
+                    if not torch.cuda.is_available():
+                        self.logger.warning("⚠️  GPU demandé mais CUDA non disponible, utilisation du CPU")
+                        device = 'cpu'
+                    else:
+                        gpu_name = torch.cuda.get_device_name(0)
+                        self.logger.info(f"🎮 Chargement Whisper '{model_size}' sur GPU: {gpu_name}")
+                except ImportError:
+                    self.logger.warning("⚠️  PyTorch non disponible, utilisation du CPU pour Whisper")
+                    device = 'cpu'
+
+            if device == 'cpu':
+                self.logger.info(f"Chargement du modèle Whisper '{model_size}' sur CPU...")
+
             self.whisper_model = whisper.load_model(model_size, device=device)
             self.logger.info("✓ Modèle Whisper chargé")
         except Exception as e:
