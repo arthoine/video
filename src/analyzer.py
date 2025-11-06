@@ -230,36 +230,54 @@ class VideoAnalyzer:
 
         try:
             # Extraire l'audio avec gestion d'erreur robuste
-            # Note: to_soundarray peut retourner une liste dans certains cas
+            # Note: to_soundarray peut retourner des formats incompatibles avec certains codecs
+            self.logger.debug("Tentative d'extraction audio via to_soundarray...")
             audio_array = video.audio.to_soundarray(fps=22050)
+
+            # Vérifications de sécurité multiples
+            if audio_array is None:
+                raise ValueError("to_soundarray a retourné None")
 
             # Convertir en numpy array si nécessaire
             if not isinstance(audio_array, np.ndarray):
-                audio_array = np.array(audio_array)
+                self.logger.debug(f"Conversion en numpy array (type actuel: {type(audio_array)})")
+                try:
+                    audio_array = np.array(audio_array, dtype=np.float32)
+                except Exception as conv_error:
+                    raise ValueError(f"Conversion numpy impossible: {conv_error}")
 
-            # Vérifier que l'extraction a fonctionné
-            if audio_array is None or len(audio_array) == 0:
-                self.logger.warning("Impossible d'extraire l'audio, scores audio = 0")
-                num_segments = int(video.duration / self.segment_duration) + 1
-                return np.zeros(num_segments)
+            # Vérifier les dimensions
+            if len(audio_array) == 0:
+                raise ValueError("Audio array vide")
+
+            if len(audio_array.shape) == 0:
+                raise ValueError("Audio array sans dimensions")
+
+            self.logger.debug(f"Audio extrait: shape={audio_array.shape}, dtype={audio_array.dtype}")
 
         except (ValueError, TypeError, AttributeError) as e:
             self.logger.error(f"Erreur lors de l'extraction audio (format incompatible): {e}")
-            self.logger.warning("Analyse audio désactivée, scores audio = 0")
+            self.logger.warning("⚠️  Analyse audio désactivée - La vidéo continue sans scores audio")
             num_segments = int(video.duration / self.segment_duration) + 1
             return np.zeros(num_segments)
         except Exception as e:
             self.logger.error(f"Erreur inattendue lors de l'extraction audio: {e}")
-            self.logger.warning("Analyse audio désactivée, scores audio = 0")
+            self.logger.warning("⚠️  Analyse audio désactivée - La vidéo continue sans scores audio")
             num_segments = int(video.duration / self.segment_duration) + 1
             return np.zeros(num_segments)
 
         # Conversion mono si stéréo
         try:
             if len(audio_array.shape) > 1 and audio_array.shape[1] > 1:
-                audio_array = np.mean(audio_array, axis=1)
+                self.logger.debug(f"Conversion stéréo → mono (shape: {audio_array.shape})")
+                # Utiliser une méthode plus sûre
+                audio_array = audio_array.mean(axis=1, dtype=np.float32)
+            elif len(audio_array.shape) > 1 and audio_array.shape[1] == 1:
+                # Stéréo mais déjà mono (1 canal)
+                audio_array = audio_array.flatten()
         except Exception as e:
             self.logger.error(f"Erreur lors de la conversion mono: {e}")
+            self.logger.warning("⚠️  Analyse audio désactivée - Format audio incompatible")
             num_segments = int(video.duration / self.segment_duration) + 1
             return np.zeros(num_segments)
 
@@ -428,22 +446,37 @@ class VideoAnalyzer:
             'transcription': 0.15
         })
 
+        # Détecter si l'audio est désactivé (tous les scores à 0)
+        audio_disabled = np.all(audio_scores == 0)
+        if audio_disabled:
+            self.logger.warning("⚠️  Audio non disponible - Pondération ajustée:")
+            self.logger.warning(f"   Visuel: {weights['visual']} → 60%")
+            self.logger.warning(f"   Transcription: {weights['transcription']} → 40%")
+
         for i, segment in enumerate(segments):
             score = 0.0
 
             # Audio
-            if i < len(audio_scores):
+            if i < len(audio_scores) and not audio_disabled:
                 score += audio_scores[i] * weights['audio']
 
             # Visuel
             if i < len(visual_scores):
-                score += visual_scores[i] * weights['visual']
+                if audio_disabled:
+                    # Si pas d'audio, donner plus de poids au visuel
+                    score += visual_scores[i] * 0.6
+                else:
+                    score += visual_scores[i] * weights['visual']
 
             # Transcription
             if transcription_scores is not None and i < len(transcription_scores):
-                score += transcription_scores[i] * weights['transcription']
-            elif transcription_scores is None:
-                # Redistribuer le poids de transcription sur audio/visuel
+                if audio_disabled:
+                    # Si pas d'audio, donner plus de poids à la transcription
+                    score += transcription_scores[i] * 0.4
+                else:
+                    score += transcription_scores[i] * weights['transcription']
+            elif transcription_scores is None and not audio_disabled:
+                # Redistribuer le poids de transcription sur audio/visuel (seulement si audio OK)
                 redistrib = weights['transcription'] / (weights['audio'] + weights['visual'])
                 if i < len(audio_scores):
                     score += audio_scores[i] * weights['audio'] * redistrib
