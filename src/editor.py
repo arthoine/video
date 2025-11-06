@@ -224,21 +224,16 @@ class VideoEditor:
             self.logger.info("🎮 Utilisation de l'accélération GPU NVIDIA (h264_nvenc)")
 
         # Paramètres FFmpeg optimisés
+        # Note: Ne pas mettre -c:v ici car déjà dans le paramètre codec= de write_videofile
         ffmpeg_params = [
-            '-c:v', codec,
             '-preset', preset,
         ]
 
         # IMPORTANT: NVENC n'utilise PAS -crf mais -cq (constant quality)
         if codec == 'h264_nvenc':
-            # Pour NVENC: -cq (0-51, comme CRF) + rate control mode
-            ffmpeg_params.extend([
-                '-rc:v', 'vbr',  # Variable bitrate mode
-                '-cq:v', crf,    # Constant quality (équivalent CRF)
-                '-b:v', '0',     # Pas de limite de bitrate
-                '-maxrate:v', '20M',  # Limite max pour éviter les pics
-                '-bufsize:v', '40M',
-            ])
+            # Pour NVENC: -cq active automatiquement le mode VBR constant quality
+            # Méthode simplifiée et la plus fiable
+            ffmpeg_params.extend(['-cq', crf])
         else:
             # Pour x264/x265 CPU: utiliser CRF classique
             ffmpeg_params.extend(['-crf', crf])
