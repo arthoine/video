@@ -244,19 +244,26 @@ class VideoEditor:
                 # On garde h264_nvenc et on laisse FFmpeg gérer
 
         # Paramètres FFmpeg optimisés
-        # Note: Ne pas mettre -c:v ici car déjà dans le paramètre codec= de write_videofile
-        ffmpeg_params = [
-            '-preset', preset,
-        ]
+        # IMPORTANT: On doit mettre -c:v dans ffmpeg_params car MoviePy peut ignorer le paramètre codec=
+        ffmpeg_params = []
 
-        # IMPORTANT: NVENC n'utilise PAS -crf mais -cq (constant quality)
+        # FORCER le codec vidéo dans ffmpeg_params (MoviePy peut ignorer codec=)
         if codec == 'h264_nvenc':
-            # Pour NVENC: -cq active automatiquement le mode VBR constant quality
-            # Méthode simplifiée et la plus fiable
-            ffmpeg_params.extend(['-cq', crf])
+            self.logger.info("=" * 70)
+            self.logger.info("🎮 ENCODAGE GPU ACTIVÉ")
+            self.logger.info("=" * 70)
+            ffmpeg_params.extend(['-c:v', 'h264_nvenc'])  # FORCER h264_nvenc
+            ffmpeg_params.extend(['-preset', preset])
+            ffmpeg_params.extend(['-cq', crf])  # Constant Quality pour NVENC
+            self.logger.info(f"Commande FFmpeg (GPU):")
+            self.logger.info(f"  -c:v h264_nvenc -preset {preset} -cq {crf}")
         else:
-            # Pour x264/x265 CPU: utiliser CRF classique
-            ffmpeg_params.extend(['-crf', crf])
+            self.logger.info("⚠️  ENCODAGE CPU (pas de GPU)")
+            ffmpeg_params.extend(['-c:v', codec])  # libx264 ou autre
+            ffmpeg_params.extend(['-preset', preset])
+            ffmpeg_params.extend(['-crf', crf])  # CRF pour x264
+            self.logger.info(f"Commande FFmpeg (CPU):")
+            self.logger.info(f"  -c:v {codec} -preset {preset} -crf {crf}")
 
         # Paramètres communs
         ffmpeg_params.extend([
@@ -267,15 +274,19 @@ class VideoEditor:
             '-movflags', '+faststart',  # Optimisation streaming
         ])
 
-        # Ajout du threading (pour CPU ou fallback)
+        # Ajout du threading (pour CPU uniquement)
         if num_threads > 0 and codec != 'h264_nvenc':
             ffmpeg_params.extend(['-threads', str(num_threads)])
 
+        self.logger.info(f"Paramètres FFmpeg complets:")
+        self.logger.info(f"  {' '.join(ffmpeg_params)}")
+        self.logger.info("=" * 70)
+
         # Export avec barre de progression
+        # IMPORTANT: Ne PAS passer codec= car on le met déjà dans ffmpeg_params
         video.write_videofile(
             str(self.output_path),
             fps=self.fps,
-            codec=codec,  # Utilise le codec correct (GPU ou CPU)
             audio_codec=self.audio_codec,
             threads=num_threads if num_threads > 0 else None,
             ffmpeg_params=ffmpeg_params,
