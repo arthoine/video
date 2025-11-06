@@ -229,57 +229,52 @@ class VideoAnalyzer:
             return np.zeros(num_segments)
 
         try:
-            # Extraire l'audio avec gestion d'erreur robuste
-            # Note: to_soundarray peut retourner des formats incompatibles avec certains codecs
-            self.logger.debug("Tentative d'extraction audio via to_soundarray...")
-            audio_array = video.audio.to_soundarray(fps=22050)
+            # MÉTHODE 1: Essayer avec librosa directement (plus robuste que MoviePy)
+            # librosa utilise FFmpeg en backend et gère mieux les codecs problématiques
+            self.logger.info("🔧 Extraction audio avec librosa (méthode robuste)...")
 
-            # Vérifications de sécurité multiples
-            if audio_array is None:
-                raise ValueError("to_soundarray a retourné None")
+            # librosa peut lire directement depuis le fichier vidéo
+            audio_array, sample_rate = librosa.load(
+                str(self.video_path),
+                sr=22050,      # Sample rate
+                mono=True,     # Convertir en mono automatiquement
+                dtype=np.float32
+            )
 
-            # Convertir en numpy array si nécessaire
-            if not isinstance(audio_array, np.ndarray):
-                self.logger.debug(f"Conversion en numpy array (type actuel: {type(audio_array)})")
-                try:
+            self.logger.info(f"✓ Audio extrait: {len(audio_array)} samples à {sample_rate}Hz")
+
+        except Exception as librosa_error:
+            self.logger.warning(f"Librosa a échoué: {librosa_error}")
+            self.logger.info("Tentative avec MoviePy en fallback...")
+
+            try:
+                # MÉTHODE 2 (fallback): MoviePy
+                audio_array = video.audio.to_soundarray(fps=22050)
+
+                # Vérifications
+                if audio_array is None or len(audio_array) == 0:
+                    raise ValueError("MoviePy a retourné un audio vide")
+
+                # Convertir en numpy array si nécessaire
+                if not isinstance(audio_array, np.ndarray):
                     audio_array = np.array(audio_array, dtype=np.float32)
-                except Exception as conv_error:
-                    raise ValueError(f"Conversion numpy impossible: {conv_error}")
 
-            # Vérifier les dimensions
-            if len(audio_array) == 0:
-                raise ValueError("Audio array vide")
+                # Conversion mono si stéréo
+                if len(audio_array.shape) > 1:
+                    if audio_array.shape[1] > 1:
+                        audio_array = audio_array.mean(axis=1, dtype=np.float32)
+                    else:
+                        audio_array = audio_array.flatten()
 
-            if len(audio_array.shape) == 0:
-                raise ValueError("Audio array sans dimensions")
+                self.logger.info(f"✓ Audio extrait via MoviePy (fallback)")
 
-            self.logger.debug(f"Audio extrait: shape={audio_array.shape}, dtype={audio_array.dtype}")
-
-        except (ValueError, TypeError, AttributeError) as e:
-            self.logger.error(f"Erreur lors de l'extraction audio (format incompatible): {e}")
-            self.logger.warning("⚠️  Analyse audio désactivée - La vidéo continue sans scores audio")
-            num_segments = int(video.duration / self.segment_duration) + 1
-            return np.zeros(num_segments)
-        except Exception as e:
-            self.logger.error(f"Erreur inattendue lors de l'extraction audio: {e}")
-            self.logger.warning("⚠️  Analyse audio désactivée - La vidéo continue sans scores audio")
-            num_segments = int(video.duration / self.segment_duration) + 1
-            return np.zeros(num_segments)
-
-        # Conversion mono si stéréo
-        try:
-            if len(audio_array.shape) > 1 and audio_array.shape[1] > 1:
-                self.logger.debug(f"Conversion stéréo → mono (shape: {audio_array.shape})")
-                # Utiliser une méthode plus sûre
-                audio_array = audio_array.mean(axis=1, dtype=np.float32)
-            elif len(audio_array.shape) > 1 and audio_array.shape[1] == 1:
-                # Stéréo mais déjà mono (1 canal)
-                audio_array = audio_array.flatten()
-        except Exception as e:
-            self.logger.error(f"Erreur lors de la conversion mono: {e}")
-            self.logger.warning("⚠️  Analyse audio désactivée - Format audio incompatible")
-            num_segments = int(video.duration / self.segment_duration) + 1
-            return np.zeros(num_segments)
+            except Exception as moviepy_error:
+                self.logger.error(f"❌ MoviePy a aussi échoué: {moviepy_error}")
+                self.logger.error("❌ IMPOSSIBLE D'EXTRAIRE L'AUDIO - Les deux méthodes ont échoué")
+                self.logger.warning("⚠️  Analyse audio désactivée - Vérifiez le codec audio de votre vidéo")
+                self.logger.warning("💡 Essayez de ré-encoder: ffmpeg -i input.mp4 -c:v copy -c:a aac output.mp4")
+                num_segments = int(video.duration / self.segment_duration) + 1
+                return np.zeros(num_segments)
 
         # Calcul de l'énergie RMS par segment
         segment_scores = []
