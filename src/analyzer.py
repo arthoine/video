@@ -482,4 +482,13 @@ class VideoAnalyzer:
             segment.metadata['audio_score'] = audio_scores[i] if i < len(audio_scores) else 0
             segment.metadata['visual_score'] = visual_scores[i] if i < len(visual_scores) else 0
 
+        # Filtrage des segments statiques (craft/base) basé sur score visuel
+        min_visual_threshold = self.config.get('advanced', {}).get('min_visual_score', 0.0)
+        if min_visual_threshold > 0:
+            before_count = len(segments)
+            segments = [s for s in segments if s.metadata.get('visual_score', 0) >= min_visual_threshold]
+            filtered = before_count - len(segments)
+            if filtered > 0:
+                self.logger.info(f"🎯 Filtre statique: {filtered} segments retirés (visual_score < {min_visual_threshold})")
+
         return segments

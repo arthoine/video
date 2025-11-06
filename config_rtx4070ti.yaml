@@ -8,18 +8,18 @@ analysis:
   # Segments courts = analyse plus précise
   segment_duration_seconds: 5
 
-  # Seuils ajustés pour FPS intense (PvP focus)
-  audio_intensity_threshold: 0.6   # 0.7 → 0.6 : détecte plus d'action audio
-  scene_change_threshold: 25.0     # 30 → 25 : mouvements rapides FPS
+  # Seuils STRICTS pour ACTION PURE (PvP/combat uniquement)
+  audio_intensity_threshold: 0.65  # 0.6 → 0.65 : TRÈS intense seulement (gunfire/explosions)
+  scene_change_threshold: 20.0     # 25 → 20 : mouvements RAPIDES (pas craft statique)
 
   # Whisper sur GPU = TRÈS rapide avec RTX 4070 Ti
   enable_whisper: true
   whisper_model: base  # 'base' optimal même avec GPU puissant
 
   score_weights:
-    audio: 0.60       # 0.50 → 0.60 : PRIORITÉ kills/tirs/explosions
-    visual: 0.30      # 0.35 → 0.30 : action visuelle
-    transcription: 0.10  # 0.15 → 0.10 : moins important que l'action
+    audio: 0.65       # 0.60 → 0.65 : MAX priorité sons intenses (kills/tirs)
+    visual: 0.30      # Garde : changements scène rapides
+    transcription: 0.05  # 0.10 → 0.05 : QUASI IGNORÉ (évite craft/talk)
 
 editing:
   # ===================================================================
@@ -99,12 +99,15 @@ performance:
   audio_chunk_size: 120  # Plus gros = moins d'I/O = plus rapide
 
 advanced:
-  # Score minimum - sélectif
-  min_score_threshold: 0.3
+  # Score minimum STRICT - PvP/combat intense uniquement
+  min_score_threshold: 0.35  # 0.3 → 0.35 : filtre craft/base/talk
 
-  # Filtrage silences
+  # NOUVEAU: Filtre segments statiques (craft/base)
+  min_visual_score: 0.20     # Retire segments avec peu de mouvement visuel
+
+  # Filtrage silences AGRESSIF
   remove_silent_segments: true
-  silence_threshold_db: -40
+  silence_threshold_db: -35  # -40 → -35 : retire plus de moments calmes
 
   # Préférence segments
   prefer_longer_segments: false
