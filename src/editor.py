@@ -20,6 +20,7 @@ from moviepy.editor import (
 )
 
 from src.analyzer import VideoSegment
+from src.ffmpeg_encoder import encode_with_ffmpeg_direct
 
 
 class VideoEditor:
@@ -94,17 +95,49 @@ class VideoEditor:
         if self.outro_path:
             all_clips.append(self._load_intro_outro(self.outro_path, "outro"))
 
-        # Assemblage des clips
-        self.logger.info("Assemblage de la vidéo finale...")
-        final_video = concatenate_videoclips(all_clips, method="compose")
+        # Export - Utiliser FFmpeg direct si GPU activé (plus fiable)
+        use_gpu = self.config.get('performance', {}).get('use_gpu', False)
+        use_direct_ffmpeg = use_gpu  # Utiliser FFmpeg direct si GPU pour éviter les problèmes MoviePy
 
-        # Export
-        self.logger.info(f"Export vers {self.output_path}...")
-        self._export_video(final_video)
+        if use_direct_ffmpeg:
+            self.logger.info("🚀 Utilisation de FFmpeg DIRECT (bypass MoviePy pour GPU)")
+            self.logger.info(f"Export vers {self.output_path}...")
+
+            # Déterminer les paramètres
+            preset = self.config.get('output', {}).get('preset', 'hq')
+            cq = str(self.config.get('output', {}).get('crf', 20))
+
+            # Encoder directement avec FFmpeg
+            success = encode_with_ffmpeg_direct(
+                input_clips=all_clips,
+                output_path=str(self.output_path),
+                fps=self.fps,
+                codec='h264_nvenc',
+                preset=preset,
+                cq=cq,
+                audio_codec=self.audio_codec,
+                use_gpu=True
+            )
+
+            if not success:
+                self.logger.error("❌ Encodage FFmpeg direct a échoué")
+                self.logger.info("Tentative avec MoviePy en fallback...")
+                # Fallback sur MoviePy
+                final_video = concatenate_videoclips(all_clips, method="compose")
+                self._export_video(final_video)
+                final_video.close()
+        else:
+            # Méthode classique MoviePy
+            self.logger.info("Assemblage de la vidéo finale...")
+            final_video = concatenate_videoclips(all_clips, method="compose")
+
+            self.logger.info(f"Export vers {self.output_path}...")
+            self._export_video(final_video)
+
+            final_video.close()
 
         # Nettoyage
         video.close()
-        final_video.close()
         for clip in clips:
             clip.close()
 
