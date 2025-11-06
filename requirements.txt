@@ -27,6 +27,7 @@ scipy>=1.11.0
 openai-whisper>=20231117  # Transcription audio locale
 torch>=2.0.0              # Backend pour Whisper
 torchaudio>=2.0.0         # Audio processing pour Whisper
+ollama>=0.1.0             # LLaVA - Analyse sémantique (optionnel)
 
 # ============================================================================
 # UTILITIES
