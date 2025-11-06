@@ -207,11 +207,24 @@ class VideoEditor:
 
     def _export_video(self, video: VideoFileClip):
         """Exporte la vidéo finale avec les paramètres optimisés."""
+        # Lecture des paramètres depuis la config
+        preset = self.config.get('output', {}).get('preset', 'medium')
+        crf = str(self.config.get('output', {}).get('crf', 18))
+        num_threads = self.config.get('performance', {}).get('num_threads', 0)
+
+        # Détermination du codec (GPU ou CPU)
+        codec = self.codec
+        if self.config.get('performance', {}).get('use_gpu', False):
+            if self.codec == 'libx264':
+                codec = 'h264_nvenc'  # NVIDIA
+                preset = 'medium'  # Les presets nvenc sont différents
+                self.logger.info("Utilisation de l'accélération GPU pour l'export")
+
         # Paramètres FFmpeg optimisés pour YouTube
         ffmpeg_params = [
-            '-c:v', self.codec,
-            '-preset', 'medium',  # Balance entre vitesse et qualité
-            '-crf', '18',  # Qualité (18 = haute qualité, 23 = défaut)
+            '-c:v', codec,
+            '-preset', preset,
+            '-crf', crf,
             '-pix_fmt', 'yuv420p',  # Compatibilité maximale
             '-c:a', self.audio_codec,
             '-b:a', '192k',  # Bitrate audio
@@ -219,19 +232,17 @@ class VideoEditor:
             '-movflags', '+faststart',  # Optimisation streaming
         ]
 
-        # Ajout de l'accélération GPU si disponible
-        if self.config.get('performance', {}).get('use_gpu', False):
-            # Détection du codec GPU approprié
-            if self.codec == 'libx264':
-                ffmpeg_params[1] = 'h264_nvenc'  # NVIDIA
-            self.logger.info("Utilisation de l'accélération GPU pour l'export")
+        # Ajout du threading si spécifié
+        if num_threads > 0:
+            ffmpeg_params.extend(['-threads', str(num_threads)])
 
         # Export avec barre de progression
         video.write_videofile(
             str(self.output_path),
             fps=self.fps,
-            codec=self.codec,
+            codec=codec,  # Utilise le codec correct (GPU ou CPU)
             audio_codec=self.audio_codec,
+            threads=num_threads if num_threads > 0 else None,
             ffmpeg_params=ffmpeg_params,
             verbose=False,
             logger='bar'

@@ -1,0 +1,59 @@
+# Configuration optimisée pour encodage rapide
+# Utilisez cette config pour encoder rapidement avec une qualité acceptable
+# Encodage 3-5x plus rapide que config.yaml par défaut
+
+analysis:
+  segment_duration_seconds: 5
+  audio_intensity_threshold: 0.7
+  scene_change_threshold: 30.0
+  enable_whisper: true
+  whisper_model: base
+
+  score_weights:
+    audio: 0.50
+    visual: 0.35
+    transcription: 0.15
+
+editing:
+  min_gap_between_segments: 30
+  context_before_seconds: 2
+  context_after_seconds: 3
+  min_segment_duration: 5
+  max_segment_duration: 30
+  use_transitions: true
+  transition_duration: 0.5
+
+output:
+  target_duration_minutes: 15
+  quality: 1080p
+  fps: 60
+  codec: libx264
+  audio_codec: aac
+
+  # PARAMÈTRES OPTIMISÉS POUR VITESSE
+  preset: faster      # 'faster' = 2-3x plus rapide que 'medium'
+  crf: 23            # Qualité standard (au lieu de 18)
+
+performance:
+  use_gpu: false
+  use_cache: true
+  num_threads: 4     # Utilise 4 threads CPU pour l'encodage
+  audio_chunk_size: 60
+
+advanced:
+  min_score_threshold: 0.3
+  remove_silent_segments: true
+  silence_threshold_db: -40
+  prefer_longer_segments: false
+  transcription_boost_factor: 1.2
+
+# Notes:
+# - preset 'faster': Encodage 2-3x plus rapide, légère perte de qualité (~5-10%)
+# - crf 23: Qualité standard YouTube (au lieu de 18 = très haute qualité)
+# - num_threads 4: Utilise 4 cœurs CPU simultanément
+#
+# Temps estimés pour 15min de highlights:
+# - Config par défaut (preset=medium, crf=18): ~1h40min
+# - Cette config (preset=faster, crf=23): ~20-30min
+#
+# Pour encore plus rapide, utilisez config_fast_preview.yaml (720p, 30fps)

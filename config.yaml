@@ -100,14 +100,14 @@ output:
 
   # Preset d'encodage
   # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
-  # medium: bon compromis vitesse/qualité (RECOMMANDÉ)
-  # slow/slower: meilleure qualité mais beaucoup plus lent
-  preset: medium
+  # faster: bon compromis vitesse/qualité (RECOMMANDÉ)
+  # medium/slow: meilleure qualité mais beaucoup plus lent
+  preset: faster
 
   # CRF (Constant Rate Factor) - qualité vidéo
   # 0 = lossless (énorme), 18 = très haute qualité, 23 = défaut, 28 = basse qualité
-  # 18 recommandé pour YouTube
-  crf: 18
+  # 23 recommandé pour YouTube (bonne qualité, encodage rapide)
+  crf: 23
 
   # Chemin vers une vidéo d'intro (optionnel)
   # Laissez vide pour désactiver
@@ -129,8 +129,9 @@ performance:
   # Permet de réutiliser les analyses précédentes
   use_cache: true
 
-  # Nombre de threads pour le traitement (0 = auto)
-  num_threads: 0
+  # Nombre de threads pour le traitement (0 = auto-detect, 4-8 recommandé)
+  # Plus de threads = encodage plus rapide (mais rendements décroissants après 8)
+  num_threads: 4
 
   # Taille des chunks pour le traitement audio (en secondes)
   # Plus petit = moins de RAM mais plus lent
