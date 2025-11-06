@@ -8,39 +8,39 @@ analysis:
   # Segments courts = analyse plus précise
   segment_duration_seconds: 5
 
-  # Seuils ajustés pour gaming intense
-  audio_intensity_threshold: 0.7
-  scene_change_threshold: 30.0
+  # Seuils ajustés pour FPS intense (PvP focus)
+  audio_intensity_threshold: 0.6   # 0.7 → 0.6 : détecte plus d'action audio
+  scene_change_threshold: 25.0     # 30 → 25 : mouvements rapides FPS
 
   # Whisper sur GPU = TRÈS rapide avec RTX 4070 Ti
   enable_whisper: true
   whisper_model: base  # 'base' optimal même avec GPU puissant
 
   score_weights:
-    audio: 0.50       # Le plus important pour FPS
-    visual: 0.35      # Action rapide
-    transcription: 0.15
+    audio: 0.60       # 0.50 → 0.60 : PRIORITÉ kills/tirs/explosions
+    visual: 0.30      # 0.35 → 0.30 : action visuelle
+    transcription: 0.10  # 0.15 → 0.10 : moins important que l'action
 
 editing:
   # ===================================================================
-  # FUSION INTELLIGENTE DE SEGMENTS (NOUVEAU!)
+  # FUSION ULTRA-AGRESSIVE POUR FPS (COMBAT COMPLET!)
   # ===================================================================
-  # Fusionne automatiquement les segments proches pour capturer des
-  # séquences d'action complètes (ex: début combat → 1v3 → looting)
+  # Capture les séquences d'action COMPLÈTES : début → milieu → fin
+  # Optimisé pour FPS rapide type Apex/Warzone/Valorant
   merge_consecutive_segments: true
-  merge_max_gap: 15              # Fusionne si < 15s entre segments
-  merge_min_score: 0.25          # Score min pour fusionner
+  merge_max_gap: 25              # 15 → 25s : fusionne même avec gros gaps
+  merge_min_score: 0.15          # 0.25 → 0.15 : accepte segments moyens entre kills
 
-  # Filtrage spatial (réduit car fusion intelligente active)
-  min_gap_between_segments: 20   # Réduit de 30 → 20s
+  # Filtrage spatial minimal (fusion gère les séquences)
+  min_gap_between_segments: 10   # 20 → 10s : clips très proches OK
 
-  # Contexte pour storytelling
-  context_before_seconds: 2
-  context_after_seconds: 3
+  # Contexte réduit (la fusion capture déjà tout)
+  context_before_seconds: 1      # 2 → 1s
+  context_after_seconds: 2       # 3 → 2s
 
-  # Contraintes de durée (plus flexibles pour captures complètes)
-  min_segment_duration: 2        # 5 → 2s (permet clips courts)
-  max_segment_duration: 90       # 30 → 90s (séquences longues OK)
+  # Contraintes de durée pour FPS
+  min_segment_duration: 3        # 2 → 3s (micro-moments OK)
+  max_segment_duration: 120      # 90 → 120s (combats longs entiers)
 
   # Transitions professionnelles
   use_transitions: true
