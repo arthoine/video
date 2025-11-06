@@ -37,8 +37,8 @@ output:
   # PARAMÈTRES GPU OPTIMISÉS
   # Le preset pour NVENC est différent de x264
   # Options NVENC: fast, medium, slow, hq, bd, ll, llhq, lossless
-  preset: hq          # High Quality preset pour NVENC
-  crf: 20            # Qualité excellente (18-23 recommandé)
+  preset: hq          # High Quality preset pour NVENC (RECOMMANDÉ)
+  crf: 20            # Qualité (sera converti en -cq pour NVENC)
 
 performance:
   # ⚡ ACTIVATION GPU

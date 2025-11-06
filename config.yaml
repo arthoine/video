@@ -99,9 +99,10 @@ output:
   audio_bitrate: 192
 
   # Preset d'encodage
-  # ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
-  # faster: bon compromis vitesse/qualité (RECOMMANDÉ)
-  # medium/slow: meilleure qualité mais beaucoup plus lent
+  # CPU (x264): ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow
+  # GPU (NVENC): fast, medium, slow, hq, bd, ll, llhq, lossless
+  # Si GPU activé: 'hq' sera utilisé automatiquement (high quality)
+  # Sinon: 'faster' pour CPU
   preset: faster
 
   # CRF (Constant Rate Factor) - qualité vidéo

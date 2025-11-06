@@ -214,26 +214,46 @@ class VideoEditor:
 
         # Détermination du codec (GPU ou CPU)
         codec = self.codec
-        if self.config.get('performance', {}).get('use_gpu', False):
-            if self.codec == 'libx264':
-                codec = 'h264_nvenc'  # NVIDIA
-                preset = 'medium'  # Les presets nvenc sont différents
-                self.logger.info("Utilisation de l'accélération GPU pour l'export")
+        use_gpu = self.config.get('performance', {}).get('use_gpu', False)
 
-        # Paramètres FFmpeg optimisés pour YouTube
+        if use_gpu and self.codec == 'libx264':
+            codec = 'h264_nvenc'  # NVIDIA
+            # NVENC utilise des presets différents: fast, medium, slow, hq, bd, ll, llhq
+            if preset not in ['fast', 'medium', 'slow', 'hq', 'bd', 'll', 'llhq', 'lossless']:
+                preset = 'hq'  # High quality par défaut pour GPU
+            self.logger.info("🎮 Utilisation de l'accélération GPU NVIDIA (h264_nvenc)")
+
+        # Paramètres FFmpeg optimisés
         ffmpeg_params = [
             '-c:v', codec,
             '-preset', preset,
-            '-crf', crf,
+        ]
+
+        # IMPORTANT: NVENC n'utilise PAS -crf mais -cq (constant quality)
+        if codec == 'h264_nvenc':
+            # Pour NVENC: -cq (0-51, comme CRF) + rate control mode
+            ffmpeg_params.extend([
+                '-rc:v', 'vbr',  # Variable bitrate mode
+                '-cq:v', crf,    # Constant quality (équivalent CRF)
+                '-b:v', '0',     # Pas de limite de bitrate
+                '-maxrate:v', '20M',  # Limite max pour éviter les pics
+                '-bufsize:v', '40M',
+            ])
+        else:
+            # Pour x264/x265 CPU: utiliser CRF classique
+            ffmpeg_params.extend(['-crf', crf])
+
+        # Paramètres communs
+        ffmpeg_params.extend([
             '-pix_fmt', 'yuv420p',  # Compatibilité maximale
             '-c:a', self.audio_codec,
             '-b:a', '192k',  # Bitrate audio
             '-ar', '48000',  # Sampling rate audio (standard YouTube)
             '-movflags', '+faststart',  # Optimisation streaming
-        ]
+        ])
 
-        # Ajout du threading si spécifié
-        if num_threads > 0:
+        # Ajout du threading (pour CPU ou fallback)
+        if num_threads > 0 and codec != 'h264_nvenc':
             ffmpeg_params.extend(['-threads', str(num_threads)])
 
         # Export avec barre de progression
