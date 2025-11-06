@@ -40,6 +40,11 @@ class VideoEditor:
         self.min_segment_duration = config.get('editing', {}).get('min_segment_duration', 5)
         self.max_segment_duration = config.get('editing', {}).get('max_segment_duration', 30)
 
+        # Paramètres de fusion de segments
+        self.merge_consecutive = config.get('editing', {}).get('merge_consecutive_segments', True)
+        self.merge_max_gap = config.get('editing', {}).get('merge_max_gap', 10)
+        self.merge_min_score = config.get('editing', {}).get('merge_min_score', 0.25)
+
         # Paramètres d'export
         self.quality = config.get('output', {}).get('quality', '1080p')
         self.fps = config.get('output', {}).get('fps', 60)
@@ -65,6 +70,12 @@ class VideoEditor:
             segments: Liste de segments triés par score (meilleurs en premier)
         """
         self.logger.info(f"Création de la vidéo de highlights (cible: {self.target_duration/60:.1f} min)")
+
+        # Fusion des segments consécutifs AVANT la sélection
+        # Cela permet de capturer des séquences d'action complètes
+        if self.merge_consecutive:
+            self.logger.info("🔗 Fusion des segments consécutifs activée")
+            segments = self._merge_consecutive_segments(segments)
 
         # Sélection des meilleurs segments
         selected_segments = self._select_best_segments(segments)
@@ -193,6 +204,64 @@ class VideoEditor:
 
         self.logger.info(f"Durée totale des segments: {total_duration/60:.1f} min")
         return selected
+
+    def _merge_consecutive_segments(self, segments: List[VideoSegment]) -> List[VideoSegment]:
+        """
+        Fusionne les segments consécutifs ou proches pour capturer des séquences complètes.
+
+        Algorithme:
+        1. Trier par temps de début
+        2. Pour chaque segment, vérifier si le suivant est proche (< merge_max_gap)
+        3. Si oui et que le score est bon (> merge_min_score), fusionner
+        4. Continuer jusqu'à ce qu'on trouve un gap trop grand ou un segment faible
+
+        Cela permet de capturer des actions complètes comme:
+        début du combat → 1v3 → looting
+        """
+        if not segments or not self.merge_consecutive:
+            return segments
+
+        # Trier par temps de début
+        sorted_segments = sorted(segments, key=lambda s: s.start_time)
+        merged = []
+
+        i = 0
+        while i < len(sorted_segments):
+            current = sorted_segments[i]
+
+            # Chercher tous les segments fusionnables avec celui-ci
+            j = i + 1
+            while j < len(sorted_segments):
+                next_seg = sorted_segments[j]
+                gap = next_seg.start_time - current.end_time
+
+                # Conditions de fusion:
+                # 1. Gap assez petit (< merge_max_gap)
+                # 2. Score du segment suivant suffisant (> merge_min_score)
+                if gap <= self.merge_max_gap and next_seg.score >= self.merge_min_score:
+                    # Fusionner: étendre current jusqu'à la fin de next_seg
+                    old_duration = current.duration
+                    current.end_time = next_seg.end_time
+                    current.duration = current.end_time - current.start_time
+                    # Score moyen pondéré
+                    current.score = (current.score * old_duration + next_seg.score * next_seg.duration) / current.duration
+                    self.logger.debug(
+                        f"Fusion: {current.start_time:.1f}s + {next_seg.start_time:.1f}s "
+                        f"(gap={gap:.1f}s) → segment de {current.duration:.1f}s"
+                    )
+                    j += 1
+                else:
+                    break
+
+            merged.append(current)
+            i = j
+
+        self.logger.info(
+            f"Fusion: {len(sorted_segments)} segments → {len(merged)} segments fusionnés "
+            f"(gain moyen: {len(sorted_segments)/max(len(merged),1):.1f}x)"
+        )
+
+        return merged
 
     def _extend_segments(self, segments: List[VideoSegment]):
         """Étend chaque segment pour ajouter du contexte avant/après."""

@@ -39,9 +39,26 @@ analysis:
 # MONTAGE VIDÉO
 # ============================================================================
 editing:
+  # ===================================================================
+  # FUSION INTELLIGENTE DE SEGMENTS (NOUVEAU!)
+  # ===================================================================
+  # Active la fusion automatique des segments proches pour capturer
+  # des séquences d'action complètes (ex: début combat → 1v3 → looting)
+  merge_consecutive_segments: true
+
+  # Écart maximum entre segments pour les fusionner (secondes)
+  # Ex: si 2 segments sont à 15s d'intervalle et ont de bons scores,
+  # ils seront fusionnés en 1 seul clip continu
+  merge_max_gap: 15
+
+  # Score minimum pour qu'un segment soit fusionné avec le précédent
+  # Plus bas = plus de fusion, plus haut = fusion sélective
+  merge_min_score: 0.25
+
   # Écart minimum entre deux segments (en secondes)
   # Évite d'avoir des clips trop rapprochés
-  min_gap_between_segments: 30
+  # (Réduit car la fusion intelligente gère mieux les séquences)
+  min_gap_between_segments: 20
 
   # Contexte ajouté avant chaque moment fort (en secondes)
   # Permet de voir ce qui mène au moment clé
@@ -53,11 +70,13 @@ editing:
 
   # Durée minimale d'un segment (en secondes)
   # Les segments plus courts sont ignorés
-  min_segment_duration: 5
+  # (Réduit pour permettre des micro-moments intéressants)
+  min_segment_duration: 2
 
   # Durée maximale d'un segment (en secondes)
   # Les segments plus longs sont tronqués
-  max_segment_duration: 30
+  # (Augmenté pour permettre de longues séquences d'action)
+  max_segment_duration: 90
 
   # Utiliser des transitions entre les clips
   use_transitions: true

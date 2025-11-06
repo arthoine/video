@@ -22,16 +22,25 @@ analysis:
     transcription: 0.15
 
 editing:
-  # Filtrage spatial optimisé
-  min_gap_between_segments: 30
+  # ===================================================================
+  # FUSION INTELLIGENTE DE SEGMENTS (NOUVEAU!)
+  # ===================================================================
+  # Fusionne automatiquement les segments proches pour capturer des
+  # séquences d'action complètes (ex: début combat → 1v3 → looting)
+  merge_consecutive_segments: true
+  merge_max_gap: 15              # Fusionne si < 15s entre segments
+  merge_min_score: 0.25          # Score min pour fusionner
+
+  # Filtrage spatial (réduit car fusion intelligente active)
+  min_gap_between_segments: 20   # Réduit de 30 → 20s
 
   # Contexte pour storytelling
   context_before_seconds: 2
   context_after_seconds: 3
 
-  # Contraintes de durée
-  min_segment_duration: 5
-  max_segment_duration: 30
+  # Contraintes de durée (plus flexibles pour captures complètes)
+  min_segment_duration: 2        # 5 → 2s (permet clips courts)
+  max_segment_duration: 90       # 30 → 90s (séquences longues OK)
 
   # Transitions professionnelles
   use_transitions: true
