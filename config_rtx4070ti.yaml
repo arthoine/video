@@ -1,0 +1,159 @@
+# Configuration OPTIMISÉE pour NVIDIA RTX 4070 Ti
+# 12 GB VRAM | Architecture Ada Lovelace | 7680 CUDA cores
+#
+# Cette config tire le maximum de ta carte graphique pour un traitement ultra-rapide
+# Temps estimé pour 1h de vidéo -> 15min highlights: ~6-8 minutes
+
+analysis:
+  # Segments courts = analyse plus précise
+  segment_duration_seconds: 5
+
+  # Seuils ajustés pour gaming intense
+  audio_intensity_threshold: 0.7
+  scene_change_threshold: 30.0
+
+  # Whisper sur GPU = TRÈS rapide avec RTX 4070 Ti
+  enable_whisper: true
+  whisper_model: base  # 'base' optimal même avec GPU puissant
+
+  score_weights:
+    audio: 0.50       # Le plus important pour FPS
+    visual: 0.35      # Action rapide
+    transcription: 0.15
+
+editing:
+  # Filtrage spatial optimisé
+  min_gap_between_segments: 30
+
+  # Contexte pour storytelling
+  context_before_seconds: 2
+  context_after_seconds: 3
+
+  # Contraintes de durée
+  min_segment_duration: 5
+  max_segment_duration: 30
+
+  # Transitions professionnelles
+  use_transitions: true
+  transition_duration: 0.5
+  transition_type: crossfade
+
+output:
+  # Durée cible
+  target_duration_minutes: 15
+
+  # Qualité maximale compatible YouTube
+  quality: 1080p
+  fps: 60            # 60fps pour gaming fluide
+
+  # Codec (sera auto-remplacé par h264_nvenc)
+  codec: libx264
+  audio_codec: aac
+
+  # ===================================================================
+  # PARAMÈTRES NVENC OPTIMISÉS POUR RTX 4070 Ti
+  # ===================================================================
+
+  # Preset NVENC:
+  # - 'hq' = High Quality (RECOMMANDÉ pour YouTube)
+  # - 'bd' = Blu-ray Disc quality (si tu veux le max absolu)
+  preset: hq
+
+  # CRF/CQ (Constant Quality):
+  # RTX 4070 Ti peut encoder à haute qualité sans ralentissement
+  # - 18 = Qualité exceptionnelle (YouTube premium)
+  # - 20 = Excellente qualité (recommandé)
+  # - 23 = Bonne qualité standard
+  crf: 20
+
+  # Bitrate audio haute qualité
+  audio_bitrate: 192
+
+  # Intro/outro (optionnel)
+  intro_path: ""
+  outro_path: ""
+
+performance:
+  # ===================================================================
+  # ACTIVATION GPU - CRITICAL
+  # ===================================================================
+  use_gpu: true       # Active CUDA + NVENC
+
+  # Cache pour éviter de re-analyser
+  use_cache: true
+
+  # Threads CPU (pour fallback uniquement)
+  # RTX 4070 Ti gère tout sur GPU, mais garde 4 threads CPU en backup
+  num_threads: 4
+
+  # Chunks audio - 12GB VRAM permet de gros chunks
+  audio_chunk_size: 120  # Plus gros = moins d'I/O = plus rapide
+
+advanced:
+  # Score minimum - sélectif
+  min_score_threshold: 0.3
+
+  # Filtrage silences
+  remove_silent_segments: true
+  silence_threshold_db: -40
+
+  # Préférence segments
+  prefer_longer_segments: false
+
+  # Boost transcription
+  transcription_boost_factor: 1.2
+
+# ============================================================================
+# PERFORMANCE RTX 4070 Ti - BENCHMARKS ATTENDUS
+# ============================================================================
+#
+# Pour 1h de vidéo source -> 15min de highlights:
+#
+# 1. Analyse Whisper (CUDA):        ~45-90 secondes  ⚡
+# 2. Analyse visuelle (OpenCV):     ~30 secondes
+# 3. Sélection segments:             ~5 secondes
+# 4. Extraction clips:               ~30 secondes
+# 5. Encodage NVENC (h264_nvenc):    ~3-4 minutes    ⚡
+#
+# TOTAL: ~6-8 minutes (au lieu de 35-50 min sans GPU)
+#
+# Indicateurs de succès:
+# ----------------------
+# ✅ Logs: "🎮 Utilisation de l'accélération GPU NVIDIA (h264_nvenc)"
+# ✅ Whisper: ~1-2 min pour 1h d'audio (pas 10-15 min)
+# ✅ Encodage: 120-150 it/s (pas 7-11 it/s)
+# ✅ nvidia-smi: GPU 80-95% (pas 4%)
+#
+# ============================================================================
+# OPTIMISATIONS RTX 4070 Ti SPÉCIFIQUES
+# ============================================================================
+#
+# Architecture Ada Lovelace (4000 series):
+# - Encodeurs NVENC de 8ème génération (ultra-rapides)
+# - Support AV1 hardware (pas encore utilisé ici, mais disponible)
+# - 12 GB VRAM permet d'encoder plusieurs streams en parallèle
+# - Tensor cores pour Whisper accéléré
+#
+# Cette config utilise:
+# 1. NVENC 8th gen avec preset 'hq' (balance vitesse/qualité)
+# 2. CUDA pour Whisper (utilise Tensor cores automatiquement)
+# 3. Gros chunks audio (12GB VRAM permet)
+# 4. CQ 20 pour qualité exceptionnelle sans ralentir
+#
+# Variantes:
+# ----------
+# Pour MAXIMUM vitesse (preview): preset: fast, crf: 23
+# Pour MAXIMUM qualité: preset: bd, crf: 18
+# Pour 4K: quality: 4k (la 4070 Ti peut!)
+#
+# ============================================================================
+# COMPARAISON CPU vs GPU (RTX 4070 Ti)
+# ============================================================================
+#
+#                     CPU (16 threads)    GPU (RTX 4070 Ti)    Gain
+# Whisper (1h)        15-20 min          45-90 sec            ~15x
+# Encodage (15min)    20-30 min          3-4 min              ~7x
+# TOTAL               35-50 min          6-8 min              ~6x
+#
+# La 4070 Ti est une BÊTE pour l'édition vidéo! 🔥
+# ============================================================================

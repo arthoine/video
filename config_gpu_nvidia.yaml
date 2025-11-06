@@ -1,6 +1,8 @@
-# Configuration optimisée pour GPU NVIDIA (RTX 2000+)
+# Configuration optimisée pour GPU NVIDIA (RTX 2000+, 3000, 4000 series)
 # Temps de traitement pour 15min de highlights: ~5-10 minutes
 # Requiert: GPU NVIDIA avec CUDA, drivers à jour, FFmpeg avec NVENC
+#
+# Pour RTX 4070 Ti spécifiquement, utilisez: config_rtx4070ti.yaml
 
 analysis:
   segment_duration_seconds: 5

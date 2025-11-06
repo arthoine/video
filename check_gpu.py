@@ -144,11 +144,33 @@ def main():
         print("🎉 TOUT EST BON! Le GPU sera utilisé pour:")
         print("   - Whisper (transcription audio)")
         print("   - Encodage vidéo (h264_nvenc)")
-        print("\n⚡ Temps estimé pour 15min de highlights:")
-        print("   - Avec GPU: ~5-10 minutes")
-        print("   - Sans GPU: ~20-30 minutes")
-        print("\n🚀 Vous pouvez lancer:")
-        print("   python main.py -i votre_video.mp4")
+
+        # Détection RTX 4070 Ti pour conseils optimisés
+        try:
+            import torch
+            if torch.cuda.is_available():
+                gpu_name = torch.cuda.get_device_name(0)
+                if "4070" in gpu_name and "Ti" in gpu_name:
+                    print("\n🔥 RTX 4070 Ti DÉTECTÉE!")
+                    print("   Utilisez config_rtx4070ti.yaml pour performances optimales")
+                    print("\n⚡ Temps estimé (1h vidéo -> 15min highlights):")
+                    print("   - Avec votre RTX 4070 Ti: ~6-8 minutes")
+                    print("   - Sans GPU: ~35-50 minutes")
+                    print("\n🚀 Commandes recommandées:")
+                    print("   python main.py -i video.mp4 -c config_rtx4070ti.yaml")
+                    print("\n📖 Guide détaillé: Voir RTX4070TI_GUIDE.md")
+                else:
+                    print("\n⚡ Temps estimé pour 15min de highlights:")
+                    print("   - Avec GPU: ~5-10 minutes")
+                    print("   - Sans GPU: ~20-30 minutes")
+                    print("\n🚀 Vous pouvez lancer:")
+                    print("   python main.py -i votre_video.mp4")
+        except:
+            print("\n⚡ Temps estimé pour 15min de highlights:")
+            print("   - Avec GPU: ~5-10 minutes")
+            print("   - Sans GPU: ~20-30 minutes")
+            print("\n🚀 Vous pouvez lancer:")
+            print("   python main.py -i votre_video.mp4")
     else:
         print("⚠️  PROBLÈMES DÉTECTÉS")
         print("\nLe programme fonctionnera mais utilisera le CPU (plus lent)")

@@ -206,8 +206,13 @@ class VideoAnalyzer:
             return np.zeros(num_segments)
 
         try:
-            # Extraire l'audio avec gestion d'erreur
+            # Extraire l'audio avec gestion d'erreur robuste
+            # Note: to_soundarray peut retourner une liste dans certains cas
             audio_array = video.audio.to_soundarray(fps=22050)
+
+            # Convertir en numpy array si nécessaire
+            if not isinstance(audio_array, np.ndarray):
+                audio_array = np.array(audio_array)
 
             # Vérifier que l'extraction a fonctionné
             if audio_array is None or len(audio_array) == 0:
@@ -215,15 +220,25 @@ class VideoAnalyzer:
                 num_segments = int(video.duration / self.segment_duration) + 1
                 return np.zeros(num_segments)
 
+        except (ValueError, TypeError, AttributeError) as e:
+            self.logger.error(f"Erreur lors de l'extraction audio (format incompatible): {e}")
+            self.logger.warning("Analyse audio désactivée, scores audio = 0")
+            num_segments = int(video.duration / self.segment_duration) + 1
+            return np.zeros(num_segments)
         except Exception as e:
-            self.logger.error(f"Erreur lors de l'extraction audio: {e}")
+            self.logger.error(f"Erreur inattendue lors de l'extraction audio: {e}")
             self.logger.warning("Analyse audio désactivée, scores audio = 0")
             num_segments = int(video.duration / self.segment_duration) + 1
             return np.zeros(num_segments)
 
         # Conversion mono si stéréo
-        if len(audio_array.shape) > 1 and audio_array.shape[1] > 1:
-            audio_array = np.mean(audio_array, axis=1)
+        try:
+            if len(audio_array.shape) > 1 and audio_array.shape[1] > 1:
+                audio_array = np.mean(audio_array, axis=1)
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la conversion mono: {e}")
+            num_segments = int(video.duration / self.segment_duration) + 1
+            return np.zeros(num_segments)
 
         # Calcul de l'énergie RMS par segment
         segment_scores = []
