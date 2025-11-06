@@ -37,6 +37,9 @@ import librosa
 from scipy import signal
 from moviepy.editor import VideoFileClip
 
+# Import analyseur LLM pour compréhension sémantique
+from src.llm_analyzer import LLMAnalyzer, SemanticAnalysis
+
 
 class VideoSegment:
     """Représente un segment vidéo avec son score d'intensité."""
@@ -84,6 +87,11 @@ class VideoAnalyzer:
         self.whisper_model = None
         if self.use_whisper and WHISPER_AVAILABLE:
             self._load_whisper_model()
+
+        # Initialisation analyseur LLM (LLaVA) pour compréhension sémantique
+        self.llm_analyzer = LLMAnalyzer(config)
+        if self.llm_analyzer.enabled:
+            self.logger.info("🧠 Analyseur sémantique LLaVA activé")
 
     def _load_whisper_model(self):
         """Charge le modèle Whisper pour la transcription audio."""
@@ -189,9 +197,15 @@ class VideoAnalyzer:
             self.logger.info("Transcription audio avec Whisper...")
             transcription_scores = self._analyze_transcription(video)
 
+        # Analyse sémantique avec LLaVA (optionnel)
+        semantic_analyses = None
+        if self.llm_analyzer.enabled:
+            semantic_analyses = self._analyze_semantic(video, segments)
+
         # Combinaison des scores
         self.logger.info("Calcul des scores finaux...")
-        final_segments = self._combine_scores(segments, audio_scores, visual_scores, transcription_scores)
+        final_segments = self._combine_scores(segments, audio_scores, visual_scores,
+                                              transcription_scores, semantic_analyses)
 
         # Tri par score décroissant
         final_segments.sort(key=lambda s: s.score, reverse=True)
@@ -425,21 +439,118 @@ class VideoAnalyzer:
             except Exception as e:
                 self.logger.warning(f"Impossible de supprimer le fichier temporaire: {e}")
 
+    def _analyze_semantic(self, video: VideoFileClip,
+                         segments: List[VideoSegment]) -> Optional[List[SemanticAnalysis]]:
+        """
+        Analyse sémantique des frames avec LLaVA pour comprendre le contexte.
+
+        Au lieu de simplement mesurer des pics audio/visuels, cette méthode
+        utilise un LLM vision pour COMPRENDRE ce qui se passe:
+        - PvP combat vs PvE vs looting vs crafting
+        - Intensité réelle de l'action
+        - Position dans la séquence (start/peak/end)
+
+        Args:
+            video: Vidéo à analyser
+            segments: Liste des segments à analyser
+
+        Returns:
+            Liste de SemanticAnalysis (ou None si LLaVA désactivé)
+        """
+        if not self.llm_analyzer.enabled:
+            return None
+
+        self.logger.info("🧠 Analyse sémantique avec LLaVA...")
+        self.logger.info(f"   Extraction de {len(segments)} frames représentatives...")
+
+        # Créer dossier temporaire pour les frames
+        temp_dir = tempfile.mkdtemp(prefix='streamhighlight_frames_')
+        frame_paths = []
+        segment_indices = []
+
+        try:
+            # Extraire 1 frame au milieu de chaque segment
+            for i, segment in enumerate(tqdm(segments, desc="Frames")):
+                # Frame au milieu du segment
+                frame_time = segment.start_time + (segment.duration / 2.0)
+
+                # Extraire la frame
+                frame = video.get_frame(frame_time)
+
+                # Sauvegarder la frame
+                frame_path = os.path.join(temp_dir, f"frame_{i:05d}.jpg")
+                import PIL.Image
+                PIL.Image.fromarray(frame).save(frame_path, quality=85)
+
+                frame_paths.append(frame_path)
+                segment_indices.append(i)
+
+            # Analyser les frames avec LLaVA en batch
+            semantic_analyses = self.llm_analyzer.analyze_frames_batch(
+                frame_paths,
+                segment_indices
+            )
+
+            # Log résumé
+            if semantic_analyses:
+                action_counts = {}
+                for analysis in semantic_analyses:
+                    if analysis:
+                        action_type = analysis.action_type.value
+                        action_counts[action_type] = action_counts.get(action_type, 0) + 1
+
+                self.logger.info("📊 Résumé analyse sémantique:")
+                for action, count in sorted(action_counts.items(), key=lambda x: x[1], reverse=True):
+                    self.logger.info(f"   {action}: {count} segments")
+
+            return semantic_analyses
+
+        except Exception as e:
+            self.logger.error(f"Erreur analyse sémantique: {e}")
+            return None
+
+        finally:
+            # Nettoyage: supprimer les frames temporaires
+            try:
+                import shutil
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+                    self.logger.debug(f"Frames temporaires supprimées: {temp_dir}")
+            except Exception as e:
+                self.logger.warning(f"Impossible de supprimer les frames temporaires: {e}")
+
     def _combine_scores(self, segments: List[VideoSegment], audio_scores: np.ndarray,
-                       visual_scores: np.ndarray, transcription_scores: np.ndarray = None) -> List[VideoSegment]:
+                       visual_scores: np.ndarray, transcription_scores: np.ndarray = None,
+                       semantic_analyses: List[SemanticAnalysis] = None) -> List[VideoSegment]:
         """
         Combine les différents scores avec pondération.
 
-        Pondération par défaut:
+        Pondération par défaut (sans LLaVA):
         - Audio: 50% (le plus important pour les FPS)
         - Visuel: 35% (action rapide)
         - Transcription: 15% (si disponible)
+
+        Avec LLaVA activé:
+        - Sémantique (LLaVA): 50% (compréhension contexte)
+        - Audio: 25% (pics sonores)
+        - Visuel: 20% (changements scène)
+        - Transcription: 5% (mots-clés)
         """
-        weights = self.config.get('analysis', {}).get('score_weights', {
-            'audio': 0.5,
-            'visual': 0.35,
-            'transcription': 0.15
-        })
+        # Poids adaptés si LLaVA est activé
+        if semantic_analyses is not None:
+            weights = self.config.get('analysis', {}).get('score_weights_llava', {
+                'semantic': 0.50,
+                'audio': 0.25,
+                'visual': 0.20,
+                'transcription': 0.05
+            })
+            self.logger.info("🧠 Pondération avec LLaVA: semantic=50%, audio=25%, visual=20%, transcription=5%")
+        else:
+            weights = self.config.get('analysis', {}).get('score_weights', {
+                'audio': 0.5,
+                'visual': 0.35,
+                'transcription': 0.15
+            })
 
         # Détecter si l'audio est désactivé (tous les scores à 0)
         audio_disabled = np.all(audio_scores == 0)
@@ -451,32 +562,45 @@ class VideoAnalyzer:
         for i, segment in enumerate(segments):
             score = 0.0
 
+            # Sémantique (LLaVA) - PRIORITAIRE si disponible
+            if semantic_analyses is not None and i < len(semantic_analyses):
+                analysis = semantic_analyses[i]
+                if analysis:
+                    semantic_score = analysis.to_score()
+                    score += semantic_score * weights.get('semantic', 0.5)
+                    segment.metadata['semantic_score'] = semantic_score
+                    segment.metadata['action_type'] = analysis.action_type.value
+                    segment.metadata['intensity'] = analysis.intensity.name
+                    segment.metadata['enemy_count'] = analysis.enemy_count
+                else:
+                    segment.metadata['semantic_score'] = 0
+
             # Audio
             if i < len(audio_scores) and not audio_disabled:
                 score += audio_scores[i] * weights['audio']
 
             # Visuel
             if i < len(visual_scores):
-                if audio_disabled:
-                    # Si pas d'audio, donner plus de poids au visuel
+                if audio_disabled and semantic_analyses is None:
+                    # Si pas d'audio et pas de LLaVA, donner plus de poids au visuel
                     score += visual_scores[i] * 0.6
                 else:
-                    score += visual_scores[i] * weights['visual']
+                    score += visual_scores[i] * weights.get('visual', 0.35)
 
             # Transcription
             if transcription_scores is not None and i < len(transcription_scores):
-                if audio_disabled:
-                    # Si pas d'audio, donner plus de poids à la transcription
+                if audio_disabled and semantic_analyses is None:
+                    # Si pas d'audio et pas de LLaVA, donner plus de poids à la transcription
                     score += transcription_scores[i] * 0.4
                 else:
-                    score += transcription_scores[i] * weights['transcription']
-            elif transcription_scores is None and not audio_disabled:
-                # Redistribuer le poids de transcription sur audio/visuel (seulement si audio OK)
-                redistrib = weights['transcription'] / (weights['audio'] + weights['visual'])
+                    score += transcription_scores[i] * weights.get('transcription', 0.15)
+            elif transcription_scores is None and not audio_disabled and semantic_analyses is None:
+                # Redistribuer le poids de transcription sur audio/visuel (seulement si pas de LLaVA)
+                redistrib = weights.get('transcription', 0.15) / (weights.get('audio', 0.5) + weights.get('visual', 0.35))
                 if i < len(audio_scores):
-                    score += audio_scores[i] * weights['audio'] * redistrib
+                    score += audio_scores[i] * weights.get('audio', 0.5) * redistrib
                 if i < len(visual_scores):
-                    score += visual_scores[i] * weights['visual'] * redistrib
+                    score += visual_scores[i] * weights.get('visual', 0.35) * redistrib
 
             segment.score = score
             segment.metadata['audio_score'] = audio_scores[i] if i < len(audio_scores) else 0
