@@ -1,0 +1,98 @@
+# Configuration optimisée pour GPU NVIDIA (RTX 2000+)
+# Temps de traitement pour 15min de highlights: ~5-10 minutes
+# Requiert: GPU NVIDIA avec CUDA, drivers à jour, FFmpeg avec NVENC
+
+analysis:
+  segment_duration_seconds: 5
+  audio_intensity_threshold: 0.7
+  scene_change_threshold: 30.0
+
+  # Whisper sur GPU = TRÈS rapide
+  enable_whisper: true
+  whisper_model: base  # 'base' recommandé même avec GPU
+
+  score_weights:
+    audio: 0.50
+    visual: 0.35
+    transcription: 0.15
+
+editing:
+  min_gap_between_segments: 30
+  context_before_seconds: 2
+  context_after_seconds: 3
+  min_segment_duration: 5
+  max_segment_duration: 30
+  use_transitions: true
+  transition_duration: 0.5
+
+output:
+  target_duration_minutes: 15
+  quality: 1080p
+  fps: 60
+
+  # Codec GPU NVIDIA
+  codec: libx264  # Sera automatiquement remplacé par h264_nvenc si GPU activé
+  audio_codec: aac
+
+  # PARAMÈTRES GPU OPTIMISÉS
+  # Le preset pour NVENC est différent de x264
+  # Options NVENC: fast, medium, slow, hq, bd, ll, llhq, lossless
+  preset: hq          # High Quality preset pour NVENC
+  crf: 20            # Qualité excellente (18-23 recommandé)
+
+performance:
+  # ⚡ ACTIVATION GPU
+  use_gpu: true       # CRITICAL: Doit être true!
+
+  use_cache: true
+
+  # Pour GPU, num_threads affecte surtout le CPU fallback
+  # Le GPU gère son propre parallélisme
+  num_threads: 4
+
+  audio_chunk_size: 120  # Chunks plus gros OK avec GPU
+
+advanced:
+  min_score_threshold: 0.3
+  remove_silent_segments: true
+  silence_threshold_db: -40
+  prefer_longer_segments: false
+  transcription_boost_factor: 1.2
+
+# ============================================================================
+# NOTES GPU NVIDIA
+# ============================================================================
+#
+# Vérification avant utilisation:
+#   python check_gpu.py
+#
+# Temps estimés (RTX 4070 Ti, vidéo 4h -> 15min highlights):
+#   - Analyse Whisper: ~2-3 min (avec GPU) vs ~15-20 min (CPU)
+#   - Encodage vidéo: ~3-5 min (NVENC) vs ~20-30 min (CPU)
+#   - TOTAL: ~5-10 min vs ~35-50 min
+#
+# Si le GPU n'est pas détecté:
+#   1. Vérifier drivers NVIDIA: nvidia-smi
+#   2. Vérifier PyTorch CUDA: python -c "import torch; print(torch.cuda.is_available())"
+#   3. Vérifier FFmpeg NVENC: ffmpeg -encoders | grep nvenc
+#
+# FFmpeg NVENC presets (du plus rapide au meilleur qualité):
+#   - fast: Très rapide, qualité correcte
+#   - medium: Bon compromis (défaut)
+#   - slow: Plus lent, meilleure qualité
+#   - hq: High Quality (recommandé pour YouTube)
+#   - bd: Blu-ray Disc (très haute qualité)
+#
+# CRF pour NVENC:
+#   - 18: Qualité exceptionnelle, gros fichiers
+#   - 20: Excellente qualité (RECOMMANDÉ)
+#   - 23: Bonne qualité, fichiers raisonnables
+#   - 26: Qualité acceptable, petits fichiers
+#
+# Pour encore plus de vitesse (preview/test):
+#   quality: 720p
+#   fps: 30
+#   preset: fast
+#   crf: 23
+#
+# ============================================================================

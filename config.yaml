@@ -123,7 +123,8 @@ output:
 performance:
   # Utiliser le GPU si disponible (CUDA)
   # Accélère considérablement Whisper et l'export vidéo
-  use_gpu: false
+  # NVIDIA 4070 Ti = 5-10min au lieu de 20-30min
+  use_gpu: true
 
   # Utiliser le cache des analyses
   # Permet de réutiliser les analyses précédentes
