@@ -24,7 +24,7 @@ import hashlib
 import tempfile
 import os
 from tqdm import tqdm
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 try:
     import whisper
