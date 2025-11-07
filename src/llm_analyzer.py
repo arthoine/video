@@ -135,7 +135,21 @@ class LLMAnalyzer:
         """Vérifie que le modèle LLaVA est disponible."""
         try:
             models = ollama.list()
-            available = any(self.model in m['name'] for m in models.get('models', []))
+            # La réponse peut être un dict avec 'models' ou directement une liste
+            model_list = models.get('models', []) if isinstance(models, dict) else models
+
+            # Chaque modèle peut être un dict ou un objet avec .model ou .name
+            available = False
+            for m in model_list:
+                model_name = ''
+                if isinstance(m, dict):
+                    model_name = m.get('name', m.get('model', ''))
+                else:
+                    model_name = getattr(m, 'model', getattr(m, 'name', ''))
+
+                if self.model in model_name:
+                    available = True
+                    break
 
             if not available:
                 self.logger.warning(f"⚠️  Modèle {self.model} non trouvé")
@@ -147,6 +161,7 @@ class LLMAnalyzer:
 
         except Exception as e:
             self.logger.error(f"❌ Erreur vérification modèle: {e}")
+            self.logger.warning(f"   LLaVA sera désactivé pour cette analyse")
             self.enabled = False
 
     def analyze_frame(self, frame_path: str, segment_index: int) -> Optional[SemanticAnalysis]:
