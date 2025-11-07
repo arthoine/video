@@ -69,8 +69,8 @@ editing:
   merge_max_gap: 25              # 15 → 25s : fusionne même avec gros gaps
   merge_min_score: 0.15          # 0.25 → 0.15 : accepte segments moyens entre kills
 
-  # Filtrage spatial minimal (fusion gère les séquences)
-  min_gap_between_segments: 10   # 20 → 10s : clips très proches OK
+  # AUCUN filtrage spatial (fusion gère tout)
+  min_gap_between_segments: 0    # 10 → 0s : clips peuvent être consécutifs/chevauchants
 
   # Contexte réduit (la fusion capture déjà tout)
   context_before_seconds: 1      # 2 → 1s
