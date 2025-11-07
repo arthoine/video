@@ -5,8 +5,8 @@
 # Temps estimé pour 1h de vidéo -> 15min highlights: ~6-8 minutes
 
 analysis:
-  # Segments courts = analyse plus précise
-  segment_duration_seconds: 5
+  # Segments ULTRA-COURTS = détection LLaVA très fine (2x plus de frames)
+  segment_duration_seconds: 2.5
 
   # Seuils STRICTS pour ACTION PURE (PvP/combat uniquement)
   audio_intensity_threshold: 0.65  # 0.6 → 0.65 : TRÈS intense seulement (gunfire/explosions)
@@ -22,11 +22,12 @@ analysis:
     transcription: 0.05  # 0.10 → 0.05 : QUASI IGNORÉ (évite craft/talk)
 
   # Poids avec LLaVA (compréhension sémantique activée)
+  # MODE LLAVA PUR : 100% confiance à l'IA pour détecter PvP/combat
   score_weights_llava:
-    semantic: 0.50    # LLaVA COMPREND le contexte (PvP/PvE/looting/craft)
-    audio: 0.25       # Pics sonores (support)
-    visual: 0.20      # Changements scène (support)
-    transcription: 0.05  # Mots-clés (minimal)
+    semantic: 1.0     # 100% LLaVA = source unique de vérité
+    audio: 0.0        # Désactivé (LLaVA comprend tout)
+    visual: 0.0       # Désactivé (LLaVA comprend tout)
+    transcription: 0.0  # Désactivé (LLaVA comprend tout)
 
 # ============================================================================
 # LLAVA - ANALYSE SÉMANTIQUE (Compréhension par LLM+Vision)
@@ -51,10 +52,11 @@ llava:
   # Plus bas = plus déterministe, plus haut = plus créatif
   temperature: 0.3
 
-  # IMPORTANT: Temps estimé avec LLaVA
-  # Pour 60 min de vidéo = 724 segments = 724 frames
-  # Batch de 5 frames : 145 batches × 3s = ~7 minutes
-  # Temps total avec LLaVA : ~22 minutes (vs 15 min sans)
+  # IMPORTANT: Temps estimé avec LLaVA (2.5s par segment)
+  # Pour 60 min de vidéo = 1440 segments = 1440 frames (2x plus précis!)
+  # Batch de 5 frames : 288 batches × 3s = ~15 minutes analyse LLaVA
+  # Temps total avec LLaVA : ~30 minutes (vs 15 min sans)
+  # AVANTAGE : Détection 2x plus fine = zéro moment manqué!
 
 editing:
   # ===================================================================
