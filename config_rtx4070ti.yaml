@@ -12,9 +12,9 @@ analysis:
   audio_intensity_threshold: 0.65  # 0.6 → 0.65 : TRÈS intense seulement (gunfire/explosions)
   scene_change_threshold: 20.0     # 25 → 20 : mouvements RAPIDES (pas craft statique)
 
-  # Whisper sur GPU = TRÈS rapide avec RTX 4070 Ti
-  enable_whisper: true
-  whisper_model: base  # 'base' optimal même avec GPU puissant
+  # Whisper DÉSACTIVÉ (LLaVA 100% suffit, économise 1-2 min)
+  enable_whisper: false
+  whisper_model: base  # Désactivé mais config gardée
 
   score_weights:
     audio: 0.65       # 0.60 → 0.65 : MAX priorité sons intenses (kills/tirs)
@@ -52,11 +52,12 @@ llava:
   # Plus bas = plus déterministe, plus haut = plus créatif
   temperature: 0.3
 
-  # IMPORTANT: Temps estimé avec LLaVA (2.5s par segment)
+  # IMPORTANT: Temps estimé avec LLaVA PUR (2.5s par segment)
   # Pour 60 min de vidéo = 1440 segments = 1440 frames (2x plus précis!)
-  # Batch de 5 frames : 288 batches × 3s = ~15 minutes analyse LLaVA
-  # Temps total avec LLaVA : ~30 minutes (vs 15 min sans)
-  # AVANTAGE : Détection 2x plus fine = zéro moment manqué!
+  # Batch de 5 frames : 288 batches × 2s = ~10 minutes analyse LLaVA
+  # Audio/Visual : DÉSACTIVÉS (poids 0% → skip analyse, économie 2-3 min)
+  # Temps total : ~25-28 minutes (au lieu de 18 min avec 5s segments)
+  # COMPROMIS : +10 min pour 2x plus de précision = EXCELLENT!
 
 editing:
   # ===================================================================
