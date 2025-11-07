@@ -183,24 +183,38 @@ class VideoAnalyzer:
         segments = self._create_segments(duration)
         self.logger.info(f"Analyse de {len(segments)} segments de {self.segment_duration}s")
 
-        # Analyse audio
-        self.logger.info("Analyse audio (intensité et pics sonores)...")
-        audio_scores = self._analyze_audio(video)
+        # Détection mode LLaVA pur (100% semantic)
+        llava_weights = self.config.get('analysis', {}).get('score_weights_llava', {})
+        semantic_weight = llava_weights.get('semantic', 0.5)
+        llava_pure_mode = self.llm_analyzer.enabled and semantic_weight >= 0.99
 
-        # Analyse visuelle
-        self.logger.info("Analyse visuelle (changements de scène)...")
-        visual_scores = self._analyze_visual(video)
-
-        # Transcription audio (optionnel)
-        transcription_scores = None
-        if self.whisper_model:
-            self.logger.info("Transcription audio avec Whisper...")
-            transcription_scores = self._analyze_transcription(video)
-
-        # Analyse sémantique avec LLaVA (optionnel)
+        # Analyse sémantique avec LLaVA (si activé)
         semantic_analyses = None
         if self.llm_analyzer.enabled:
+            self.logger.info("🧠 Analyse sémantique LLaVA...")
             semantic_analyses = self._analyze_semantic(video, segments)
+
+        # Mode LLaVA pur : skip audio/visual/transcription
+        if llava_pure_mode:
+            self.logger.info("🎯 MODE LLAVA PUR activé (semantic=100%)")
+            self.logger.info("   ⏩ Audio/Visual/Transcription DÉSACTIVÉS (économie de temps)")
+            audio_scores = np.zeros(len(segments))
+            visual_scores = np.zeros(len(segments))
+            transcription_scores = None
+        else:
+            # Analyse audio
+            self.logger.info("Analyse audio (intensité et pics sonores)...")
+            audio_scores = self._analyze_audio(video)
+
+            # Analyse visuelle
+            self.logger.info("Analyse visuelle (changements de scène)...")
+            visual_scores = self._analyze_visual(video)
+
+            # Transcription audio (optionnel)
+            transcription_scores = None
+            if self.whisper_model:
+                self.logger.info("Transcription audio avec Whisper...")
+                transcription_scores = self._analyze_transcription(video)
 
         # Combinaison des scores
         self.logger.info("Calcul des scores finaux...")
